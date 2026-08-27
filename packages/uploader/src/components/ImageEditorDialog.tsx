@@ -24,6 +24,7 @@ function EditorLoadingFallback() {
 interface ImageEditorDialogProps {
   onClose: () => void;
   imageUrl: string;
+  originalFileName?: string;
   aspectRatio?: number;
   outputWidth?: number;
   imageFormat?: string;
@@ -38,6 +39,7 @@ interface ImageEditorDialogProps {
 export function ImageEditorDialog({
   onClose,
   imageUrl,
+  originalFileName,
   aspectRatio,
   outputWidth,
   imageFormat,
@@ -65,6 +67,7 @@ export function ImageEditorDialog({
       <MobileImageEditor
         imageSrc={imageUrl}
         onClose={onClose}
+        originalFileName={originalFileName}
         imageFormat={imageFormat || getExtension(imageUrl)}
         aspectRatio={aspectRatio}
         outputWidth={outputWidth}
@@ -79,6 +82,7 @@ export function ImageEditorDialog({
     <CustomImageEditor
       imageSrc={imageUrl}
       onClose={onClose}
+      originalFileName={originalFileName}
       imageFormat={imageFormat || getExtension(imageUrl)}
       aspectRatio={aspectRatio}
       outputWidth={outputWidth}

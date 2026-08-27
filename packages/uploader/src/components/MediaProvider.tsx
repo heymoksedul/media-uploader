@@ -21,6 +21,10 @@ export interface ApiMedia {
   width: number | null;
   height: number | null;
   createdAt: Date;
+  altText?: string;
+  title?: string;
+  caption?: string;
+  description?: string;
 }
 
 export interface StorageStatus {
@@ -73,7 +77,7 @@ export interface MediaContextType {
   deleteMedia: (id: string) => Promise<{ success: boolean; error?: string }>;
   updateMedia: (
     id: string,
-    data: { filename?: string; folder?: string },
+    data: { filename?: string; folder?: string; altText?: string; title?: string; caption?: string; description?: string },
   ) => Promise<{ success: boolean; data?: ApiMedia; error?: string }>;
   /** @deprecated Unsplash support was removed. Kept optional for back-compat. */
   searchUnsplash?: (
@@ -131,7 +135,7 @@ export interface MediaAdapter {
   /** Rename / move. Optional — omit and updates are applied locally. */
   update?: (
     id: string,
-    patch: { filename?: string; folder?: string },
+    patch: { filename?: string; folder?: string; altText?: string; title?: string; caption?: string; description?: string },
   ) => Promise<MediaMutationResult>;
 }
 

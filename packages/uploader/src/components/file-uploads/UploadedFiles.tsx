@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FileIcon, Play } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { FaFileAlt } from "react-icons/fa";
 import { FaCheck, FaImage } from "react-icons/fa6";
 import { toast } from "sonner";
@@ -56,6 +57,24 @@ export default function UploadedFiles({
   isLoadingMore = false,
   onLoadMore,
 }: UploadedFilesProps & { isMultiple?: boolean; selectedFileUrls?: string[] }) {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && onLoadMore) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, onLoadMore]);
+
   // Handle file click based on type
   const handleFileClick = (file: ApiMedia, imgElement?: HTMLImageElement) => {
     const isVideoFile =
@@ -215,7 +234,7 @@ export default function UploadedFiles({
 
   const renderLoadMoreButton = () =>
     hasMore ? (
-      <div className="flex justify-center pt-4 pb-1">
+      <div ref={loadMoreRef} className="flex justify-center pt-4 pb-1">
         <Button
           type="button"
           variant="secondary"

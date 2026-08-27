@@ -6,10 +6,13 @@ import {
   MediaUploadDialog,
   MediaUploadField,
 } from "@hellokit/media-uploader";
+import { Image as ImageIcon, X } from "lucide-react";
 import React, { useMemo, useRef, useState } from "react";
 
 export default function Home() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [gallery, setGallery] = useState<string[]>([]);
   const [thumb, setThumb] = useState("");
   const [cover, setCover] = useState("");
   const [avatar, setAvatar] = useState("");
@@ -240,6 +243,73 @@ export default function Home() {
                 />
               </div>
             </div>
+
+            {/* Gallery / Multiple Selection */}
+            <div className="sm:col-span-2 rounded-2xl border border-border bg-card p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                    Gallery System
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Multiple Media Selection
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsGalleryOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+                >
+                  Add Media
+                </button>
+              </div>
+
+              <div className="pt-2">
+                {gallery.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border rounded-xl bg-muted/30 text-muted-foreground">
+                    <ImageIcon className="size-8 mb-2 opacity-50" />
+                    <p className="text-sm font-medium">No media selected</p>
+                    <p className="text-xs">
+                      Click Add Media to select multiple files
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {gallery.map((url, i) => (
+                      <div
+                        key={i}
+                        className="group relative aspect-square rounded-xl border border-border overflow-hidden bg-muted"
+                      >
+                        {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                          <video
+                            src={url}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                            loop
+                            autoPlay
+                          />
+                        ) : (
+                          <img
+                            src={url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <button
+                          onClick={() =>
+                            setGallery((prev) => prev.filter((u) => u !== url))
+                          }
+                          className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full bg-destructive/90 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-destructive"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </main>
 
@@ -256,6 +326,19 @@ export default function Home() {
           onClose={() => setIsUploadOpen(false)}
           onConfirm={(urls) => {
             setIsUploadOpen(false);
+          }}
+        />
+      )}
+
+      {/* Gallery Multiple Selector Modal */}
+      {isGalleryOpen && (
+        <MediaUploadDialog
+          isMultiple={true}
+          initialSelectedUrls={gallery}
+          onClose={() => setIsGalleryOpen(false)}
+          onConfirm={(urls) => {
+            setGallery(Array.isArray(urls) ? urls : [urls]);
+            setIsGalleryOpen(false);
           }}
         />
       )}

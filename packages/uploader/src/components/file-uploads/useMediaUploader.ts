@@ -15,6 +15,9 @@ interface UseMediaUploaderProps {
   fileType?: "all" | "image" | "video";
   onlyVideo?: boolean;
   initialFile?: File | null;
+  initialSelectedUrl?: string;
+  initialSelectedUrls?: string[];
+  onUploadSuccess?: () => void;
 }
 
 export function useMediaUploader({
@@ -26,11 +29,16 @@ export function useMediaUploader({
   fileType = "all",
   onlyVideo = false,
   initialFile,
+  initialSelectedUrl,
+  initialSelectedUrls,
+  onUploadSuccess,
 }: UseMediaUploaderProps) {
   const resolvedFileType = onlyVideo ? "video" : fileType;
   const [activeTab, setActiveTab] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>([]);
+  const [selectedFileUrls, setSelectedFileUrls] = useState<string[]>(
+    initialSelectedUrls || (initialSelectedUrl ? [initialSelectedUrl] : [])
+  );
   const [selectedFileRatio, setSelectedFileRatio] = useState<number | null>(
     null,
   );
@@ -45,10 +53,18 @@ export function useMediaUploader({
     hasMore,
     loadMore: onLoadMore,
     uploadMedia,
-    deleteMedia: removeItem,
+    deleteMedia: contextRemoveItem,
     isLimitError,
     onLimitExceeded,
   } = useMediaContext();
+
+  const removeItem = async (id: string) => {
+    const file = files.find((f) => f.id === id);
+    if (file && selectedFileUrls.includes(file.url)) {
+      setSelectedFileUrls((prev) => prev.filter((u) => u !== file.url));
+    }
+    await contextRemoveItem(id);
+  };
 
   const setFolder = (folder: string | null) => {
     // In a real app, you might want to filter the files or trigger a re-fetch.
@@ -124,6 +140,9 @@ export function useMediaUploader({
 
       setSelectedFileUrls([url]);
       setSelectedFileRatio(ratio);
+      if (file) {
+        setSelectedFile(file);
+      }
 
       if (bypassCropper) {
         onConfirm(url, 1, "image");
@@ -136,13 +155,98 @@ export function useMediaUploader({
     }
   };
 
-  const onFileUpload = (fileOrUrl: File | string) => {
+  const onFileUpload = async (fileOrUrl: File | string) => {
     if (typeof fileOrUrl === "string") {
       handleFileSelect(fileOrUrl, 1, true, "image");
       return;
     }
 
     const file = fileOrUrl;
+
+    if (isMultiple) {
+      const isImage = file.type.startsWith("image/");
+      const isVectorOrAnim = file.type.includes("svg") || file.type.includes("gif");
+      
+      if (isImage && !isVectorOrAnim) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (reader.result) {
+            const img = new Image();
+            img.onload = async () => {
+              try {
+                toast.loading(`Uploading ${file.name}...`, { id: `upload-${file.name}` });
+                
+                let targetWidth = img.width;
+                let targetHeight = img.height;
+                if (targetWidth > 1080) {
+                  const ratio = 1080 / targetWidth;
+                  targetWidth = 1080;
+                  targetHeight = Math.round(targetHeight * ratio);
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = targetWidth;
+                canvas.height = targetHeight;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) throw new Error("Could not get canvas context");
+                ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+                const webpBlob = await new Promise<Blob>((resolve, reject) =>
+                  canvas.toBlob(
+                    (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+                    "image/webp",
+                    0.8
+                  )
+                );
+                
+                const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                const result = await uploadMedia(
+                  new File([webpBlob], newFileName, { type: "image/webp" }),
+                  "images"
+                );
+
+                if (result.success && result.data) {
+                  toast.success("Uploaded successfully!", { id: `upload-${file.name}` });
+                  const uploadedUrl = result.data.url;
+                  setSelectedFileUrls((prev) =>
+                    prev.includes(uploadedUrl) ? prev : [...prev, uploadedUrl]
+                  );
+                  setActiveTab(1);
+                  if (onUploadSuccess) onUploadSuccess();
+                } else {
+                  toast.error("Upload failed", { id: `upload-${file.name}` });
+                }
+              } catch (e) {
+                toast.error("Upload error", { id: `upload-${file.name}` });
+              }
+            };
+            img.src = reader.result as string;
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        try {
+          toast.loading(`Uploading ${file.name}...`, { id: `upload-${file.name}` });
+          const folder = file.type.startsWith("video/") ? "videos" : "images";
+          const result = await uploadMedia(file, folder);
+          if (result.success && result.data) {
+            toast.success("Uploaded successfully!", { id: `upload-${file.name}` });
+            const uploadedUrl = result.data.url;
+            setSelectedFileUrls((prev) => 
+              prev.includes(uploadedUrl) ? prev : [...prev, uploadedUrl]
+            );
+            setActiveTab(1);
+            if (onUploadSuccess) onUploadSuccess();
+          } else {
+            toast.error("Upload failed", { id: `upload-${file.name}` });
+          }
+        } catch (e) {
+          toast.error("Upload error", { id: `upload-${file.name}` });
+        }
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       if (reader.result) {
@@ -317,6 +421,7 @@ export function useMediaUploader({
     isVideoUpload,
     setIsVideoUpload,
     selectedFile,
+    setSelectedFileUrls,
     filteredFiles,
     isLoading,
     isLoadingMore,

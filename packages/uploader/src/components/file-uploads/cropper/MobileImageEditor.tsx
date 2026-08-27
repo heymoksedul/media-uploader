@@ -12,6 +12,7 @@ interface MobileImageEditorProps {
   aspectRatio?: number;
   imageFormat?: string;
   outputWidth?: number;
+  originalFileName?: string;
 }
 
 const MobileImageEditor: React.FC<MobileImageEditorProps> = ({
@@ -20,6 +21,7 @@ const MobileImageEditor: React.FC<MobileImageEditorProps> = ({
   onApply,
   aspectRatio,
   outputWidth,
+  originalFileName,
 }) => {
   const { uploadMedia, isLimitError, onLimitExceeded, config } = useMediaContext();
   const cropperRef = useRef<CropperRef>(null);
@@ -91,7 +93,8 @@ const MobileImageEditor: React.FC<MobileImageEditorProps> = ({
           try {
             if (!blob) throw new Error("Failed to create blob");
 
-            const file = new File([blob], `edited-image.webp`, { type: "image/webp" });
+            const baseName = originalFileName ? originalFileName.replace(/\.[^/.]+$/, "") : "edited-image";
+            const file = new File([blob], `${baseName}.webp`, { type: "image/webp" });
             const uploadResponse = await uploadMedia(file, "images");
 
             if (!uploadResponse.success) {

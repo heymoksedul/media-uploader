@@ -134,7 +134,7 @@ export function useMediaLibrary(
   }, []);
 
   const updateMedia = useCallback(
-    async (id: string, data: { filename?: string; folder?: string }) => {
+    async (id: string, data: { filename?: string; folder?: string; altText?: string; title?: string; caption?: string; description?: string }) => {
       const adapter = optionsRef.current?.adapter;
       try {
         if (adapter?.update) {

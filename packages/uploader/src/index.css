@@ -109,3 +109,7 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+a,
+button {
+  cursor: pointer;
+}

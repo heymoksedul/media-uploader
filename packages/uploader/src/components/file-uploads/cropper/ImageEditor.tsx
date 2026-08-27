@@ -20,6 +20,7 @@ interface ImageEditorProps {
   aspectRatio?: number;
   imageFormat?: string;
   outputWidth?: number;
+  originalFileName?: string;
 }
 
 export default function ImageEditor({
@@ -28,6 +29,7 @@ export default function ImageEditor({
   onApply,
   aspectRatio: initialAspectRatio,
   outputWidth,
+  originalFileName,
 }: ImageEditorProps) {
   const { uploadMedia, isLimitError, onLimitExceeded, config } =
     useMediaContext();
@@ -266,7 +268,10 @@ export default function ImageEditor({
         async (blob) => {
           try {
             if (!blob) throw new Error("Failed to create blob");
-            const file = new File([blob], `edited-image.webp`, {
+            const baseName = originalFileName
+              ? originalFileName.replace(/\.[^/.]+$/, "")
+              : "edited-image";
+            const file = new File([blob], `${baseName}.webp`, {
               type: "image/webp",
             });
             const uploadResponse = await uploadMedia(file, "images");

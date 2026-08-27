@@ -41,7 +41,7 @@ const DeleteItem = ({ fileId, onDelete }: IDeleteItemProps) => {
           e.stopPropagation();
           setIsOpen(true);
         }}
-        className="p-1 bg-muted/50 hover:bg-destructive/10 text-destructive rounded-md transition-colors"
+        className="p-1.5 bg-white/80 dark:bg-black/60 hover:bg-red-500 dark:hover:bg-red-600 text-red-600 dark:text-red-400 hover:text-white dark:hover:text-white rounded-md transition-all backdrop-blur-md shadow-sm"
         disabled={loading}
       >
         {loading ? (

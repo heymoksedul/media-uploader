@@ -14,6 +14,7 @@ import _UploadedFiles from "./UploadedFiles";
 import _UploadFiles from "./UploadFiles";
 import { useMediaUploader } from "./useMediaUploader";
 import _VideoUpload from "./VideoUpload";
+import { MediaSidebar } from "./MediaSidebar";
 
 const ImageEditorDialog = _ImageEditorDialog as unknown as (
   props: React.ComponentProps<typeof _ImageEditorDialog>,
@@ -34,7 +35,7 @@ const MdOutlineLaptopWindows = _MdOutlineLaptopWindows as unknown as (
   props: Record<string, any>,
 ) => any;
 
-interface MediaUploaderProps {
+export interface MediaUploaderProps {
   onClose: () => void;
   onConfirm: (
     uploadedUrls: string[] | string,
@@ -52,6 +53,8 @@ interface MediaUploaderProps {
   isMultiple?: boolean;
   fileType?: "all" | "image" | "video";
   initialFile?: File | null;
+  initialSelectedUrl?: string;
+  initialSelectedUrls?: string[];
 }
 
 const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
@@ -77,6 +80,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
     isVideoUpload,
     setIsVideoUpload,
     selectedFile,
+    setSelectedFileUrls,
     filteredFiles,
     isLoading,
     isLoadingMore,
@@ -174,6 +178,10 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
             <ImageEditorDialog
               onClose={() => setIsCropping(false)}
               imageUrl={selectedFileUrls[0]}
+              originalFileName={
+                filteredFiles.find((f) => f.url === selectedFileUrls[0])?.filename || 
+                selectedFile?.name
+              }
               aspectRatio={imageRatio}
               outputWidth={imageWidth}
               imageFormat={imageFormat}
@@ -249,31 +257,42 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
                 )}
               </div>
               <div className="mt-3 flex-1 overflow-y-auto min-h-0 pb-5">
-                {/* Clone element to pass viewMode if it's UploadedFiles */}
                 {tabItems.find((tab) => tab.id === activeTab)?.id === 1 ? (
-                  <UploadedFiles
-                    files={filteredFiles}
-                    onDelete={removeItem}
-                    isLoading={isLoading}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    isVideo={isVideo || resolvedFileType === "video"}
-                    onlyVideo={resolvedFileType === "video"}
-                    viewMode="grid"
-                    isMultiple={isMultiple}
-                    selectedFileUrls={selectedFileUrls}
-                    hasMore={hasMore}
-                    isLoadingMore={isLoadingMore}
-                    onLoadMore={onLoadMore}
-                    onImageSelect={(url, ratio, selectedType) =>
-                      handleFileSelect(url, ratio, false, selectedType)
-                    }
-                  />
+                  <div className="flex h-full gap-4">
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <UploadedFiles
+                        files={filteredFiles}
+                        onDelete={removeItem}
+                        isLoading={isLoading}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        isVideo={isVideo || resolvedFileType === "video"}
+                        onlyVideo={resolvedFileType === "video"}
+                        viewMode="grid"
+                        isMultiple={isMultiple}
+                        selectedFileUrls={selectedFileUrls}
+                        hasMore={hasMore}
+                        isLoadingMore={isLoadingMore}
+                        onLoadMore={onLoadMore}
+                        onImageSelect={(url, ratio, selectedType) =>
+                          handleFileSelect(url, ratio, false, selectedType)
+                        }
+                      />
+                    </div>
+                    {selectedFileUrls.length === 1 && filteredFiles.some(f => f.url === selectedFileUrls[0]) && (
+                      <div className="w-72 shrink-0 border-l border-border pl-4 overflow-y-auto hidden md:block">
+                        <MediaSidebar 
+                          file={filteredFiles.find(f => f.url === selectedFileUrls[0])}
+                          onClose={() => setSelectedFileUrls([])}
+                        />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   tabItems.find((tab) => tab.id === activeTab)?.section
                 )}
               </div>
-              {activeTab !== 5 && (
+              {(activeTab !== 5 || isMultiple) && (
                 <div className="w-full flex justify-end pt-5 border-t border-border items-center gap-3 shrink-0">
                   <Button
                     variant="outline"
