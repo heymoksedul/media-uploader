@@ -23,5 +23,14 @@ export * from './components/MediaUploadField';
 // Low-level presentational dropzone primitive.
 export * from './components/MediaDropzone';
 
+// File-type helpers (what a picker accepts: image / video / all / document / any).
+export {
+  acceptAttr,
+  acceptsKind,
+  fileTypeLabel,
+  kindOf,
+  type FileKind,
+} from './components/file-uploads/fileTypes';
+
 // Image component used internally by the uploader; exported for convenience.
 export { default as SmartImage } from './components/SmartImage';

@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMediaContext } from "../MediaProvider";
+import {
+  acceptsKind,
+  folderFor,
+  kindOf,
+  type MediaUploadFileType,
+} from "./fileTypes";
 
 interface UseMediaUploaderProps {
   onConfirm: (
@@ -12,7 +18,7 @@ interface UseMediaUploaderProps {
   imageWidth?: number;
   imageFormat?: string;
   isMultiple?: boolean;
-  fileType?: "all" | "image" | "video";
+  fileType?: MediaUploadFileType;
   onlyVideo?: boolean;
   initialFile?: File | null;
   initialSelectedUrl?: string;
@@ -85,7 +91,45 @@ export function useMediaUploader({
     setSearchInput(searchQuery);
   }, [searchQuery, setSearchInput]);
 
-  const filteredFiles = files;
+  // Only what this picker can take — an image picker must not offer a PDF
+  // (selecting one would put a document URL where an image belongs).
+  const filteredFiles = useMemo(
+    () =>
+      files.filter((f) =>
+        acceptsKind(resolvedFileType, kindOf(f.contentType, f.filename || f.url)),
+      ),
+    [files, resolvedFileType],
+  );
+
+  /** Upload a document as-is and hand back its real URL. */
+  const uploadDocument = async (file: File) => {
+    const toastId = `upload-${file.name}`;
+    toast.loading(`Uploading ${file.name}...`, { id: toastId });
+    try {
+      const result = await uploadMedia(file, "documents");
+      if (result.success && result.data) {
+        toast.success("Uploaded successfully!", { id: toastId });
+        if (onUploadSuccess) onUploadSuccess();
+        return result.data.url;
+      }
+      toast.error("Upload failed", {
+        description: result.error || "An error occurred",
+        id: toastId,
+      });
+      if (isLimitError && result.error && isLimitError(result.error)) {
+        onLimitExceeded?.();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      toast.dismiss(toastId);
+      if (isLimitError && message && isLimitError(message)) {
+        onLimitExceeded?.();
+      } else {
+        toast.error("Upload error", { id: toastId });
+      }
+    }
+    return null;
+  };
 
   const handleFileSelect = (
     url: string,
@@ -227,7 +271,7 @@ export function useMediaUploader({
       } else {
         try {
           toast.loading(`Uploading ${file.name}...`, { id: `upload-${file.name}` });
-          const folder = file.type.startsWith("video/") ? "videos" : "images";
+          const folder = folderFor(kindOf(file.type, file.name));
           const result = await uploadMedia(file, folder);
           if (result.success && result.data) {
             toast.success("Uploaded successfully!", { id: `upload-${file.name}` });
@@ -243,6 +287,17 @@ export function useMediaUploader({
         } catch (e) {
           toast.error("Upload error", { id: `upload-${file.name}` });
         }
+      }
+      return;
+    }
+
+    // Documents are never read into a data: URL — that confirmed the whole
+    // file inline (never uploaded). Upload it and confirm its real URL.
+    if (kindOf(file.type, file.name) === "document") {
+      const url = await uploadDocument(file);
+      if (url) {
+        setSelectedFileUrls([url]);
+        onConfirm(url, 1, "file");
       }
       return;
     }

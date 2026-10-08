@@ -15,6 +15,11 @@ import _UploadFiles from "./UploadFiles";
 import { useMediaUploader } from "./useMediaUploader";
 import _VideoUpload from "./VideoUpload";
 import { MediaSidebar } from "./MediaSidebar";
+import {
+  acceptAttr,
+  acceptsKind,
+  type MediaUploadFileType,
+} from "./fileTypes";
 
 const ImageEditorDialog = _ImageEditorDialog as unknown as (
   props: React.ComponentProps<typeof _ImageEditorDialog>,
@@ -51,7 +56,8 @@ export interface MediaUploaderProps {
   imageFormat?: string;
   originalname?: string;
   isMultiple?: boolean;
-  fileType?: "all" | "image" | "video";
+  /** What can be picked — see MediaUploadFileType. Default "all" (images + videos). */
+  fileType?: MediaUploadFileType;
   initialFile?: File | null;
   initialSelectedUrl?: string;
   initialSelectedUrls?: string[];
@@ -116,6 +122,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
           setActiveTab={setActiveTab}
           isVideo={isVideo || resolvedFileType === "video"}
           onlyVideo={resolvedFileType === "video"}
+          allowDocuments={acceptsKind(resolvedFileType, "document")}
           viewMode="grid"
           isMultiple={isMultiple}
           selectedFileUrls={selectedFileUrls}
@@ -243,13 +250,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
                               e.target.value = "";
                             }
                           }}
-                          accept={
-                            resolvedFileType === "image"
-                              ? "image/*"
-                              : resolvedFileType === "video"
-                                ? "video/*"
-                                : "*/*"
-                          }
+                          accept={acceptAttr(resolvedFileType)}
                         />
                       </Button>
                     </div>
@@ -268,6 +269,7 @@ const MediaUploader: React.FC<MediaUploaderProps> = (props) => {
                         setActiveTab={setActiveTab}
                         isVideo={isVideo || resolvedFileType === "video"}
                         onlyVideo={resolvedFileType === "video"}
+                        allowDocuments={acceptsKind(resolvedFileType, "document")}
                         viewMode="grid"
                         isMultiple={isMultiple}
                         selectedFileUrls={selectedFileUrls}

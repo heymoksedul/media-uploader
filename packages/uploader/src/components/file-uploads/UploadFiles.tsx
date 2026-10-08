@@ -3,11 +3,17 @@
 import { Button } from "@/components/common/Button";
 import React, { useState } from "react";
 import { toast } from "sonner";
+import {
+  acceptAttr,
+  fileTypeLabel,
+  isSupportedFile,
+  type MediaUploadFileType,
+} from "./fileTypes";
 
 interface UploadFilesProps {
   onFileUpload: (fileOrUrl: File | string) => void;
   uploadDirectly?: boolean;
-  fileType?: "all" | "image" | "video";
+  fileType?: MediaUploadFileType;
 }
 
 export default function UploadFiles({
@@ -23,24 +29,10 @@ export default function UploadFiles({
       toast.error(`${file.name} exceeds the 50MB size limit.`);
       return false;
     }
-    const supportedImages = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "image/svg+xml",
-      "image/avif",
-    ];
-    const supportedVideos = ["video/mp4", "video/webm", "video/quicktime"];
-    const valid =
-      fileType === "image"
-        ? supportedImages.includes(file.type)
-        : fileType === "video"
-          ? supportedVideos.includes(file.type)
-          : [...supportedImages, ...supportedVideos].includes(file.type);
+    const valid = isSupportedFile(fileType, file);
     if (!valid)
       toast.error(
-        `${file.name} is not a supported ${fileType === "all" ? "media" : fileType} file.`,
+        `${file.name} is not supported here. Use: ${fileTypeLabel(fileType)}.`,
       );
     return valid;
   };
@@ -77,19 +69,8 @@ export default function UploadFiles({
     }
   };
 
-  const acceptAttr =
-    fileType === "video"
-      ? ".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime"
-      : fileType === "image"
-        ? ".jpg,.jpeg,.png,.webp,.avif,.gif,.svg,image/jpeg,image/png,image/webp,image/avif,image/gif,image/svg+xml"
-        : "image/*,video/mp4,video/webm,video/quicktime";
-
-  const fileTypeLabel =
-    fileType === "video"
-      ? "MP4, WebM or MOV"
-      : fileType === "image"
-        ? "JPG, PNG, WebP, AVIF, GIF or SVG"
-        : "Supported image or video files";
+  const accept = acceptAttr(fileType);
+  const typeLabel = fileTypeLabel(fileType);
 
   return (
     <div className="w-full h-full">
@@ -156,14 +137,14 @@ export default function UploadFiles({
               or drag and drop
             </p>
             <p className="text-xs text-muted-foreground">
-              {fileTypeLabel} (max. 50MB)
+              {typeLabel} (max. 50MB)
             </p>
           </label>
           <input
             type="file"
             id="fileUpload"
             className="hidden"
-            accept={acceptAttr}
+            accept={accept}
             onChange={handleFileChange}
             disabled={isProcessing}
             multiple

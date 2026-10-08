@@ -10,9 +10,14 @@ import {
   X,
 } from "lucide-react";
 import { ReactNode, useRef, useState } from "react";
+import {
+  acceptAttr,
+  type MediaUploadFileType,
+} from "./file-uploads/fileTypes";
+
+export type { MediaUploadFileType };
 
 export type MediaUploadVariant = "box" | "button" | "avatar" | "dropzone";
-export type MediaUploadFileType = "all" | "image" | "video";
 export type MediaUploadBorderVariant = "dashed" | "solid" | "none";
 
 export interface MediaUploadFieldProps {
@@ -170,12 +175,7 @@ export function MediaUploadField({
     aspectRatio ??
     (outputWidth && outputHeight ? outputWidth / outputHeight : undefined);
 
-  const accept =
-    fileType === "image"
-      ? "image/*"
-      : fileType === "video"
-        ? "video/*"
-        : "image/*,video/*";
+  const accept = acceptAttr(fileType);
 
   const openDialog = (file?: File | null) => {
     if (disabled) return;

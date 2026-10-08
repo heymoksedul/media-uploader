@@ -36,6 +36,8 @@ interface UploadedFilesProps {
   onImageSelect: (url: string, ratio: number, selectedType: string) => void;
   isVideo?: boolean;
   onlyVideo?: boolean;
+  /** Documents (PDF, Word…) are selectable — e.g. a picker with fileType "document" / "any". */
+  allowDocuments?: boolean;
   viewMode?: "grid" | "list";
   hasMore?: boolean;
   isLoadingMore?: boolean;
@@ -51,6 +53,7 @@ export default function UploadedFiles({
   onImageSelect,
   isVideo,
   onlyVideo,
+  allowDocuments = false,
   viewMode = "grid",
   selectedFileUrls = [],
   hasMore = false,
@@ -284,7 +287,7 @@ export default function UploadedFiles({
                 // Disable if video not allowed
                 const isDisabled =
                   (isVideoFile && !isVideo) ||
-                  (!isVideoFile && !isImageFile) ||
+                  (!isVideoFile && !isImageFile && !allowDocuments) ||
                   (onlyVideo && !isVideoFile);
 
                 return (
@@ -400,7 +403,7 @@ export default function UploadedFiles({
                         : "border-border hover:border-primary/50"
                     } ${
                       (isVideoFile && !isVideo) ||
-                      (!isVideoFile && !isImageFile) ||
+                      (!isVideoFile && !isImageFile && !allowDocuments) ||
                       (onlyVideo && !isVideoFile)
                         ? "opacity-50 cursor-not-allowed"
                         : "hover:shadow-lg"
@@ -416,6 +419,10 @@ export default function UploadedFiles({
                       }
                       if (isVideoFile) {
                         handleFileClick(file); // Handle video files
+                      } else if (!isImageFile) {
+                        // Documents have no <img>; select them directly.
+                        if (allowDocuments) handleFileClick(file);
+                        else toast.error("This file type can't be used here.");
                       } else {
                         const imgElement = e.currentTarget.querySelector(
                           "img",
